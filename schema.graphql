@@ -1,0 +1,84 @@
+type EraPayout @entity {
+  id: ID!
+  eraIndex: Int
+  validatorPayoutBalance: String
+  remainder: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type Reward @entity {
+  id: ID!
+  account: String
+  amount: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type Slash @entity {
+  id: ID!
+  validatorAccount: String
+  amount: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type OldSlashingReportDiscarded @entity {
+  id: ID!
+  sessionIndex: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type StakingElection @entity {
+  id: ID!
+  electionCompute: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type SolutionStored @entity {
+  id: ID!
+  electionCompute: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type Bonded @entity {
+  id: ID!
+  account: String
+  amount: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type Unbonded @entity {
+  id: ID!
+  account: String
+  amount: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type Withdrawn @entity {
+  id: ID!
+  account: String
+  withdrawUnbondingAmount: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type Kicked @entity {
+  id: ID!
+  nominatorAccount: String
+  validatorAccount: String
+  blocknumber: BigInt
+  timestamp: Date
+}
+
+type IDGenerator @entity {
+  "id"
+  id: ID!
+  "asscending ID"
+  aID: BigInt!
+}
