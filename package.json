@@ -24,8 +24,7 @@
     "typescript": "4.4.4",
     "@subql/cli": "latest"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "exports": {
     "chaintypes": "./src/chaintypes.ts"
   }
