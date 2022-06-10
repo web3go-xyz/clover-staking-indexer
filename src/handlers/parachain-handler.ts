@@ -1,33 +1,33 @@
 import { SubstrateBlock, SubstrateEvent } from "@subql/types";
 import {
   EraPayout,
-  Reward,
-  Slash,
-  OldSlashingReportDiscarded,
   StakingElection,
-  SolutionStored,
-  Bonded,
-  Unbonded,
-  Withdrawn,
-  Kicked,
-  IDGenerator,
+  IdGenerator,
+  CloverActionHistory,
 } from "../types/models";
+
+import {
+  CloverActiontype,
+  formatSymbol,
+} from "../constants";
 
 const generaterID = "GENERATOR";
 
 const getID = async () => {
-  let generator = await IDGenerator.get(generaterID);
+  let generator = await IdGenerator.get(generaterID);
   if (generator == null) {
-    generator = new IDGenerator(generaterID);
-    generator.aID = BigInt(0).valueOf();
+    generator = new IdGenerator(generaterID);
+    const id = BigInt(0).valueOf()
+    generator.aID = id;
     await generator.save();
-    logger.info(`first aID is : ${generator.aID}`);
-    return generator.aID;
+    logger.info(`first aID is : ${id}`);
+    return id;
   } else {
-    generator.aID = generator.aID + BigInt(1).valueOf();
+    const id = generator.aID + BigInt(1).valueOf();
+    generator.aID = id;
     await generator.save();
-    logger.info(`new aID is : ${generator.aID}`);
-    return generator.aID;
+    logger.info(`new aID is : ${id}`);
+    return id;
   }
 };
 
@@ -46,11 +46,12 @@ export const handleEraPayout = async (substrateEvent: SubstrateEvent) => {
   // const {event: {data: [blockNumber,roundindex,collators,balance]}} = substrateEvent;
   logger.info(`New EraPayout created at block: ${blockNum}`);
 
+  let id = await getID();
   let newRecord: EraPayout = await EraPayout.create({
-    id: blockNum.toString() + "-" + getID().toString(),
+    id: blockNum.toString() + "-" + id.toString(),
     eraIndex: Number(eraIndex),
-    validatorPayoutBalance: validatorPayout,
-    remainder: remainder,
+    validatorPayoutBalance: formatSymbol(Number(BigInt(validatorPayout).toString(10))),
+    remainder: formatSymbol(Number(BigInt(remainder).toString(10))),
     blocknumber: BigInt(blockNum.toNumber()),
     timestamp: createdAt,
   });
@@ -65,11 +66,13 @@ export const handleReward = async (substrateEvent: SubstrateEvent) => {
   const [account, balance] = event.data.toJSON() as [string, string];
   logger.info(`New Reward created at block: ${blockNum}`);
 
-  let newRecord: Reward = await Reward.create({
-    id: blockNum.toString() + "-" + getID().toString(),
+  let id = await getID();
+  let newRecord: CloverActionHistory = await CloverActionHistory.create({
+    id: account + blockNum.toString() + "-" + id.toString(),
     account: account,
-    amount: balance,
+    amount: formatSymbol(Number(BigInt(balance).toString(10))),
     blocknumber: BigInt(blockNum.toNumber()),
+    actionType: CloverActiontype.REWARD,
     timestamp: createdAt,
   });
   await newRecord.save();
@@ -83,11 +86,14 @@ export const handleSlash = async (substrateEvent: SubstrateEvent) => {
   const [account, balance] = event.data.toJSON() as [string, string];
   logger.info(`New Slash created at block: ${blockNum}`);
 
-  let newRecord: Slash = await Slash.create({
-    id: blockNum.toString() + "-" + getID().toString(),
-    validatorAccount: account,
-    amount: balance,
+  let id = await getID();
+  let newRecord: CloverActionHistory = await CloverActionHistory.create({
+    id: account + blockNum.toString() + "-" + id.toString(),
+    account: account,
+    amount: formatSymbol(Number(BigInt(balance).toString(10))), //One validator (and its nominators) has been slashed by the given amount
     blocknumber: BigInt(blockNum.toNumber()),
+    actionType: CloverActiontype.SLASH,
+    isValidator: 1, 
     timestamp: createdAt,
   });
   await newRecord.save();
@@ -103,11 +109,13 @@ export const handleOldSlashingReportDiscarded = async (
   const [sessionIndex] = event.data.toJSON() as [string];
   logger.info(`New OldSlashingReportDiscarded created at block: ${blockNum}`);
 
-  let newRecord: OldSlashingReportDiscarded =
-    await OldSlashingReportDiscarded.create({
-      id: blockNum.toString() + "-" + getID().toString(),
-      sessionIndex: sessionIndex,
+  let id = await getID();
+  let newRecord: CloverActionHistory =
+    await CloverActionHistory.create({
+      id: blockNum.toString() + "-" + id.toString(),
+      sessionIndex: parseInt(sessionIndex),
       blocknumber: BigInt(blockNum.toNumber()),
+      actionType: CloverActiontype.OLD_SLASHING_REPORT_DISCARDED,
       timestamp: createdAt,
     });
   await newRecord.save();
@@ -122,7 +130,7 @@ export const handleStakingElection = async (substrateEvent: SubstrateEvent) => {
   logger.info(`New StakingElection created at block: ${blockNum}`);
 
   let newRecord: StakingElection = await StakingElection.create({
-    id: blockNum.toString() + "-" + getID().toString(),
+    id: blockNum.toString(),
     electionCompute: electionCompute,
     blocknumber: BigInt(blockNum.toNumber()),
     timestamp: createdAt,
@@ -130,22 +138,22 @@ export const handleStakingElection = async (substrateEvent: SubstrateEvent) => {
   await newRecord.save();
 };
 
-export const handleSolutionStored = async (substrateEvent: SubstrateEvent) => {
-  const { event, block } = substrateEvent;
-  const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+// export const handleSolutionStored = async (substrateEvent: SubstrateEvent) => {
+//   const { event, block } = substrateEvent;
+//   const { timestamp: createdAt, block: rawBlock } = block;
+//   const { number: blockNum } = rawBlock.header;
 
-  const [electionCompute] = event.data.toJSON() as [string];
-  logger.info(`New SolutionStored created at block: ${blockNum}`);
+//   const [electionCompute] = event.data.toJSON() as [string];
+//   logger.info(`New SolutionStored created at block: ${blockNum}`);
 
-  let newRecord: SolutionStored = await SolutionStored.create({
-    id: blockNum.toString() + "-" + getID().toString(),
-    electionCompute: electionCompute,
-    blocknumber: BigInt(blockNum.toNumber()),
-    timestamp: createdAt,
-  });
-  await newRecord.save();
-};
+//   let newRecord: SolutionStored = await SolutionStored.create({
+//     id: blockNum.toString() + "-" + getID().toString(),
+//     electionCompute: electionCompute,
+//     blocknumber: BigInt(blockNum.toNumber()),
+//     timestamp: createdAt,
+//   });
+//   await newRecord.save();
+// };
 
 export const handleBonded = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
@@ -155,11 +163,13 @@ export const handleBonded = async (substrateEvent: SubstrateEvent) => {
   const [accountId, balance] = event.data.toJSON() as [string, string];
   logger.info(`New Bonded created at block: ${blockNum}`);
 
-  let newRecord: Bonded = await Bonded.create({
-    id: blockNum.toString() + "-" + getID().toString(),
+  let id = await getID();
+  let newRecord: CloverActionHistory = await CloverActionHistory.create({
+    id: accountId + blockNum.toString() + "-" + id.toString(),
     account: accountId,
-    amount: balance,
+    amount: formatSymbol(Number(BigInt(balance).toString(10))),
     blocknumber: BigInt(blockNum.toNumber()),
+    actionType: CloverActiontype.BONDED,
     timestamp: createdAt,
   });
   await newRecord.save();
@@ -173,11 +183,13 @@ export const handleUnbonded = async (substrateEvent: SubstrateEvent) => {
   const [accountId, balance] = event.data.toJSON() as [string, string];
   logger.info(`New Unbonded created at block: ${blockNum}`);
 
-  let newRecord: Unbonded = await Unbonded.create({
-    id: blockNum.toString() + "-" + getID().toString(),
+  let id = await getID();
+  let newRecord: CloverActionHistory = await CloverActionHistory.create({
+    id: accountId + blockNum.toString() + "-" + id.toString(),
     account: accountId,
-    amount: balance,
+    amount: formatSymbol(Number(BigInt(balance).toString(10))),
     blocknumber: BigInt(blockNum.toNumber()),
+    actionType: CloverActiontype.UNBONDED,
     timestamp: createdAt,
   });
   await newRecord.save();
@@ -191,11 +203,13 @@ export const handleWithdrawn = async (substrateEvent: SubstrateEvent) => {
   const [accountId, balance] = event.data.toJSON() as [string, string];
   logger.info(`New Withdrawn created at block: ${blockNum}`);
 
-  let newRecord: Withdrawn = await Withdrawn.create({
-    id: blockNum.toString() + "-" + getID().toString(),
+  let id = await getID();
+  let newRecord: CloverActionHistory = await CloverActionHistory.create({
+    id: accountId + blockNum.toString() + "-" + id.toString(),
     account: accountId,
-    withdrawUnbondingAmount: balance,
+    amount: formatSymbol(Number(BigInt(balance).toString(10))),
     blocknumber: BigInt(blockNum.toNumber()),
+    actionType: CloverActiontype.WITHDRAWN,
     timestamp: createdAt,
   });
   await newRecord.save();
@@ -212,11 +226,15 @@ export const handleKicked = async (substrateEvent: SubstrateEvent) => {
   ];
   logger.info(`New Kicked created at block: ${blockNum}`);
 
-  let newRecord: Kicked = await Kicked.create({
-    id: blockNum.toString() + "-" + getID().toString(),
-    nominatorAccount: nominatorAccountId,
+  let id = await getID();
+  let newRecord: CloverActionHistory = await CloverActionHistory.create({
+    id: nominatorAccountId + blockNum.toString() + "-" + id.toString(),
+    account: nominatorAccountId,
     validatorAccount: validatorAccountId,
     blocknumber: BigInt(blockNum.toNumber()),
+    actionType: CloverActiontype.KICKED,
+    isValidator: 0, 
+    isKicked: 1,
     timestamp: createdAt,
   });
   await newRecord.save();

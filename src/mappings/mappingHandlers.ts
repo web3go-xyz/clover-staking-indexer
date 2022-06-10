@@ -6,24 +6,24 @@ import {
   handleSlash,
   handleOldSlashingReportDiscarded,
   handleStakingElection,
-  handleSolutionStored,
   handleBonded,
   handleWithdrawn,
-  handleKicked,
   handleUnbonded,
+  handleKicked,
 } from "../handlers/parachain-handler";
 
 const eventsMapping = {
   "staking/EraPayout": handleEraPayout,
   "staking/Reward": handleReward,
   "staking/Slash": handleSlash,
-  "staking/OldSlashingReportDiscarded": handleOldSlashingReportDiscarded,
+  "staking/OldSlashingReportDiscarded": handleOldSlashingReportDiscarded, //先记录下来，暂时不考虑
   "staking/StakingElection": handleStakingElection,
-  "staking/SolutionStored": handleSolutionStored,
+  // "staking/SolutionStored": handleSolutionStored,
   "staking/Bonded": handleBonded,
   "staking/Unbonded": handleUnbonded,
   "staking/Withdrawn": handleWithdrawn,
   "staking/Kicked": handleKicked,
+  // "grandpa/NewAuthorities": handleNewAuthorities,
 };
 
 export async function handleBlock(block: SubstrateBlock): Promise<void> {
@@ -43,6 +43,7 @@ export async function handleEvent(event: SubstrateEvent): Promise<void> {
   const eventType = `${section}/${method}`;
   const { method: extMethod, section: extSection } =
     extrinsic?.extrinsic.method || {};
+  logger.info("===eventType=" + eventType);
   const handler = eventsMapping[eventType];
   if (handler) {
     logger.info(
